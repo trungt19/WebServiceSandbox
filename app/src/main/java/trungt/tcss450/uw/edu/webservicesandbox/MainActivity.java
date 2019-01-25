@@ -63,9 +63,31 @@ public class MainActivity extends AppCompatActivity {
                         message);
                 break;
             case R.id.buttonHelloStatus:
+                // Build the URL outside of the AsyncTask just to see it done differently
+                Uri uri = new Uri.Builder()
+                        .scheme("https")
+                        .appendPath(getString(R.string.ep_base_url))
+                        .appendPath(getString(R.string.ep_hello_delay))
+                        .build();
+                mTask = new StatusWebServiceTask();
+                mTask.execute(uri.toString());
+
                 break;
             default:
                 throw new IllegalStateException("Not implemented");
+        }
+    }
+
+    /* onBackPressed method which allows the user to cancel calls by pressing the back button
+     */
+
+    @Override
+    public void onBackPressed() {
+        if(mTask != null && mTask.getStatus() == AsyncTask.Status.RUNNING) {
+            mTask.cancel(true);
+        }
+        else {
+            super.onBackPressed();
         }
     }
     // inner class for TestWebServiceTask that extends AsyncTask<String, Void, String>
@@ -225,6 +247,81 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             mTextView.setText(result);
+        }
+    }
+
+    private class StatusWebServiceTask extends AsyncTask<String, Integer, String> {
+
+        private final int NUMBER_OF_OPS = 10;
+
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mProgressBar.setVisibility(ProgressBar.VISIBLE);
+            mProgressBar.setMax(NUMBER_OF_OPS);
+            mProgressBar.setProgress(0);
+            mButton.setEnabled(false);
+        }
+
+
+        @Override
+        protected String doInBackground(String...strings) {
+            String response = "";
+            HttpURLConnection urlConnection = null;
+            String url = strings[0];
+            for (int i = 0; i < NUMBER_OF_OPS; i++) {
+                try {
+                    URL urlObject = new URL(url);
+                    urlConnection = (HttpURLConnection) urlObject.openConnection();
+
+                    InputStream content = urlConnection.getInputStream();
+
+                    BufferedReader buffer = new BufferedReader(new InputStreamReader(content));
+
+                    String s = "";
+                    while ((s = buffer.readLine()) != null) {
+                        response = s;
+                    }
+                    publishProgress(i + 1);
+                } catch (Exception e) {
+                    response = "Unable to connect, Reason:"
+                            + e.getMessage();
+                } finally {
+                    if (urlConnection != null)
+                        urlConnection.disconnect();
+                }
+                if (isCancelled()) {
+                    break;
+                }
+
+            }
+            return response;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer...values) {
+            super.onProgressUpdate(values);
+            mTextView.setText(Integer.toString(values[0]));
+            mProgressBar.setProgress(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            finish(result);
+        }
+
+        @Override
+        protected void onCancelled() {
+            super.onCancelled();
+            finish("Canceled");
+        }
+
+        private void finish(final String message) {
+            mProgressBar.setVisibility(ProgressBar.GONE);
+            mTextView.setText(message);
+            mButton.setEnabled(true);
+            mTask = null;
         }
     }
 }
