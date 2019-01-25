@@ -10,9 +10,13 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -52,6 +56,11 @@ public class MainActivity extends AppCompatActivity {
                         message);
                 break;
             case R.id.buttonHelloPost:
+                //Build the URL inside of the AsyncTask
+                task = new PostWebServiceTask();
+                task.execute(getString(R.string.ep_base_url),
+                        getString(R.string.ep_hello_args),
+                        message);
                 break;
             case R.id.buttonHelloStatus:
                 break;
@@ -148,6 +157,74 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 mTextView.setText(result);
             }
+        }
+    }
+
+    private class PostWebServiceTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String...strings) {
+            if(strings.length != 3) {
+                throw new IllegalArgumentException("Three String arguments required.");
+            }
+            String response = "";
+            HttpURLConnection urlConnection = null;
+            String url = strings[0];
+            String endPoint = strings[1];
+            String args = strings[2];
+            // build the url
+            Uri uri = new Uri.Builder()
+                    .scheme("https")
+                    .appendPath(url)
+                    .appendPath(endPoint)
+                    .build();
+
+            // Construct a JSONObject to build a formatted message to send.
+            JSONObject msg = new JSONObject();
+            try {
+                msg.put("name", args);
+            } catch (JSONException e) {
+                // cancel will result in onCanceled not onPostExecute
+                cancel(true);
+                return "Error with JSON creation: " + e.getMessage();
+            }
+            try {
+                URL urlObject = new URL(uri.toString());
+                urlConnection = (HttpURLConnection) urlObject.openConnection();
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setDoOutput(true);
+                OutputStreamWriter wr = new OutputStreamWriter(urlConnection.getOutputStream());
+                wr.write(msg.toString());
+                wr.flush();
+                wr.close();
+
+                InputStream content = urlConnection.getInputStream();
+                BufferedReader buffer = new BufferedReader(new InputStreamReader(content));
+                String s = "";
+                while ((s = buffer.readLine()) != null) {
+                    response += s;
+                }
+            } catch (Exception e) {
+                // cancel will result in onCanceled not onPostExecute
+                cancel(true);
+                return "Unable to connect, Reason: " + e.getMessage();
+            } finally {
+                if(urlConnection != null)
+                    urlConnection.disconnect();
+            }
+            return response;
+        }
+
+        @Override
+        protected void onCancelled(String result) {
+            super.onCancelled(result);
+            ((EditText)findViewById(R.id.inputEditText)).setError(result);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            mTextView.setText(result);
         }
     }
 }
