@@ -1,0 +1,6 @@
+<resources tools:ignore="ExtraTranslation" xmlns:tools="http://schemas.android.com/tools">
+    <string name="ep_base_url">tcss450a18.herokuapp.com</string>
+    <string name="ep_hello">https://tcss450a18.herokuapp.com/hello</string>
+    <string name="ep_hello_args">params</string>
+    <string name="ep_hello_delay">wait</string>
+</resources>

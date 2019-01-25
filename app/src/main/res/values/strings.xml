@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">WebServiceSandbox</string>
+    <string name="tv_message">Message from webservice</string>
+    <string name="inputEditText">EditText</string>
+    <string name="button_static">Static</string>
+    <string name="button_get">Get</string>
+    <string name="button_post">Post</string>
+    <string name="button_status">Status</string>
+    <string name="button_actions">Actions</string>
+
+
+
+</resources>
